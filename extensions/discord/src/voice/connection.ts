@@ -19,11 +19,12 @@ import type {
   VoiceChannelUser,
   VoiceJoinOptions,
   VoiceConnectionState,
+  VoiceSessionState,
 } from "./types.js";
 import { getGateway } from "../../../../src/discord/monitor/gateway-registry.js";
 
 type VoiceConnectionEvents = {
-  stateChange: [session: VoiceChannelSession, state: VoiceConnectionState];
+  stateChange: [session: VoiceChannelSession, state: VoiceConnectionState | VoiceSessionState];
   userJoin: [session: VoiceChannelSession, user: VoiceChannelUser];
   userLeave: [session: VoiceChannelSession, userId: string];
   userSpeaking: [session: VoiceChannelSession, userId: string, speaking: boolean];
@@ -153,8 +154,6 @@ export class DiscordVoiceConnectionManager extends EventEmitter<VoiceConnectionE
       case VoiceConnectionStatus.Connecting:
       case VoiceConnectionStatus.Signalling:
         return "connecting";
-      case VoiceConnectionStatus.Connected:
-        return "connected";
       case VoiceConnectionStatus.Disconnected:
         return "disconnected";
       case VoiceConnectionStatus.Destroyed:
@@ -204,6 +203,7 @@ export class DiscordVoiceConnectionManager extends EventEmitter<VoiceConnectionE
           deaf: false,
           selfMute: false,
           selfDeaf: false,
+          joinTimestamp: Date.now(),
         };
         session.users.set(userId, user);
       }

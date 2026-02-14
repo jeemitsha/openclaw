@@ -1,12 +1,6 @@
 export { DiscordVoiceProvider } from "./provider.js";
 export { DiscordVoiceConnectionManager } from "./connection.js";
-export {
-  AudioPipeline,
-  IncomingAudioHandler,
-  OutgoingAudioHandler,
-  OpusDecoder,
-  OpusEncoder,
-} from "./audio-pipeline.js";
+export { AudioPipeline, IncomingAudioHandler, OutgoingAudioHandler } from "./audio-pipeline.js";
 export {
   parseDiscordVoiceConfig,
   mergeVoiceConfig,

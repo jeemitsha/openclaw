@@ -628,38 +628,15 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     }
   }
 
-  // DEBUG: log all gateway dispatch events
-  {
-    const gw = client.getPlugin<GatewayPlugin>("gateway");
-    if (gw) {
-      const origWs = gw as unknown as { setupWebSocket?: () => void };
-      // Listen on the raw emitter for debug messages that include event types
-      (gw as unknown as { emitter: import("node:events").EventEmitter }).emitter.on(
-        "debug",
-        (msg: unknown) => {
-          const s = String(msg);
-          if (s.includes("VOICE") || s.includes("voice")) {
-            runtime.log?.(`[debug-gateway] ${s}`);
-          }
-        },
-      );
-    }
-    // Intercept VOICE_STATE_UPDATE and VOICE_SERVER_UPDATE events and forward
-    // them to the @discordjs/voice adapter so the voice handshake can complete.
-    // Also log selected event types for debugging.
-    const origHandleEvent = client.eventHandler.handleEvent.bind(client.eventHandler);
-    client.eventHandler.handleEvent = (payload: unknown, type: string) => {
-      if (
-        type.includes("VOICE") ||
-        type === "GUILD_CREATE" ||
-        type === "READY" ||
-        type === "RESUMED"
-      ) {
-        runtime.log?.(`[debug-event] type=${type}`);
-      }
-
-      // Forward voice gateway events to the @discordjs/voice adapter
+  // Intercept VOICE_STATE_UPDATE and VOICE_SERVER_UPDATE events and forward
+  // them to the @discordjs/voice adapter so the voice handshake can complete.
+  if (discordCfg.intents?.voiceStates) {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const origHandleEvent = client.eventHandler.handleEvent.bind(client.eventHandler) as any;
+    // oxlint-disable-next-line typescript/no-explicit-any
+    client.eventHandler.handleEvent = ((payload: any, type: string) => {
       if (type === "VOICE_STATE_UPDATE" || type === "VOICE_SERVER_UPDATE") {
+        runtime.log?.(`[debug-event] type=${type}`);
         const voiceProvider = getDiscordVoiceProvider();
         if (voiceProvider && payload && typeof payload === "object") {
           const data = payload as Record<string, unknown>;
@@ -671,7 +648,8 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
       }
 
       return origHandleEvent(payload, type);
-    };
+      // oxlint-disable-next-line typescript/no-explicit-any
+    }) as any;
   }
 
   runtime.log?.(`logged in to discord${botUserId ? ` as ${botUserId}` : ""}`);
